@@ -148,7 +148,10 @@ namespace ConsoleApp12
                 _c += mouseDelta;
             }
 
-            GenerateCurve(50);
+            if (_pickA || _pickB || _pickC || _pickD)
+            {
+                GenerateCurve(25);
+            }
 
             base.Update(gameTime);
         }
@@ -283,6 +286,8 @@ namespace ConsoleApp12
             _radiusC = 5f;
             _radiusD = 5f;
 
+            GenerateCurve(25);
+            
             base.Initialize();
         }
     }
