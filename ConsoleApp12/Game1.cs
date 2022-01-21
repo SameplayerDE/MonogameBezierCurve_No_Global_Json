@@ -11,13 +11,17 @@ namespace ConsoleApp12
     {
         private GraphicsDeviceManager _graphics;
 
-        private Vector2 _a, _b, _c, _d, _e, _f;
+        private Vector2 _a, _b, _c, _d;
+        private Vector2 _offsetA, _offsetD;
         private float _x;
 
-        private bool _pickA, _pickB, _pickD;
-        private float _radiusA, _radiusB, _radiusD;
+        private bool _pickA, _pickB, _pickC, _pickD;
+        private float _radiusA, _radiusB, _radiusC, _radiusD;
 
         private List<Vector2> _curve;
+
+        private MouseState _currMouseState;
+        private MouseState _prevMouseState;
 
         public Game1()
         {
@@ -34,7 +38,11 @@ namespace ConsoleApp12
             var totalTime = (float)gameTime.TotalGameTime.TotalSeconds;
 
             var keyboardState = Keyboard.GetState();
-            var mouseState = Mouse.GetState();
+            
+            _prevMouseState = _currMouseState;
+            _currMouseState = Mouse.GetState();
+
+            var mouseDelta = (_currMouseState.Position - _prevMouseState.Position).ToVector2();
 
             if (keyboardState.IsKeyDown(Keys.Escape))
             {
@@ -44,26 +52,28 @@ namespace ConsoleApp12
             UpdatePrimitiveRenderer();
 
             var (width, height) = GraphicsDevice.Viewport.Bounds.Size.ToVector2();
-            var mousePosition = mouseState.Position.ToVector2();
+            var mousePosition = _currMouseState.Position.ToVector2();
             mousePosition -= new Vector2(width, height) / 2;
 
             var distanceA = Vector2.Distance(_a, mousePosition);
             var distanceB = Vector2.Distance(_b, mousePosition);
+            var distanceC = Vector2.Distance(_c, mousePosition);
             var distanceD = Vector2.Distance(_d, mousePosition);
 
-            if (mouseState.LeftButton == ButtonState.Pressed)
+            if (_currMouseState.LeftButton == ButtonState.Pressed)
             {
-                if (!_pickA && !_pickB && !_pickD)
+                if (!_pickA && !_pickB && !_pickC && !_pickD)
                 {
-                    if (distanceA < distanceB && distanceA < distanceD)
+                    if (distanceA < distanceB && distanceA < distanceC && distanceA < distanceD)
                     {
                         if (distanceA < 20)
                         {
                             _pickA = true;
+                            _offsetA = _a - mousePosition;
                         }
                     }
 
-                    if (distanceB < distanceA && distanceB < distanceD)
+                    if (distanceB < distanceA && distanceB < distanceC && distanceB < distanceD)
                     {
                         if (distanceB < 20)
                         {
@@ -71,11 +81,20 @@ namespace ConsoleApp12
                         }
                     }
 
-                    if (distanceD < distanceA && distanceD < distanceB)
+                    if (distanceC < distanceA && distanceC < distanceB && distanceC < distanceD)
+                    {
+                        if (distanceC < 20)
+                        {
+                            _pickC = true;
+                        }
+                    }
+                    
+                    if (distanceD < distanceA && distanceD < distanceB && distanceD < distanceC)
                     {
                         if (distanceD < 20)
                         {
                             _pickD = true;
+                            _offsetD = _d - mousePosition;
                         }
                     }
                 }
@@ -84,18 +103,24 @@ namespace ConsoleApp12
             {
                 _pickA = false;
                 _pickB = false;
+                _pickC = false;
                 _pickD = false;
-                if (distanceA < distanceB && distanceA < distanceD)
+                if (distanceA < distanceB && distanceA < distanceC)
                 {
                     _radiusA = distanceA < 20 ? 10f : 5f;
                 }
 
-                if (distanceB < distanceA && distanceB < distanceD)
+                if (distanceB < distanceA && distanceB < distanceC)
                 {
                     _radiusB = distanceB < 20 ? 10f : 5f;
                 }
 
-                if (distanceD < distanceA && distanceD < distanceB)
+                if (distanceC < distanceA && distanceC < distanceB)
+                {
+                    _radiusC = distanceC < 20 ? 10f : 5f;
+                }
+                
+                if (distanceD < distanceA && distanceD < distanceB && distanceD < distanceC)
                 {
                     _radiusD = distanceD < 20 ? 10f : 5f;
                 }
@@ -103,7 +128,8 @@ namespace ConsoleApp12
 
             if (_pickA)
             {
-                _a = mousePosition;
+                _a = mousePosition + _offsetA;
+                _b += mouseDelta;
             }
 
             if (_pickB)
@@ -111,12 +137,18 @@ namespace ConsoleApp12
                 _b = mousePosition;
             }
 
+            if (_pickC)
+            {
+                _c = mousePosition;
+            }
+            
             if (_pickD)
             {
-                _d = mousePosition;
+                _d = mousePosition + _offsetD;
+                _c += mouseDelta;
             }
 
-            GenerateCurve(10);
+            GenerateCurve(50);
 
             base.Update(gameTime);
         }
@@ -132,10 +164,21 @@ namespace ConsoleApp12
             while (x <= 100)
             {
                 _x = x / 100f;
-                _c = Program.GetCoords(_x, _a, _b);
-                _e = Program.GetCoords(_x, _b, _d);
-                _f = Program.GetCoords(_x, _c, _e);
-                _curve.Add(new Vector2(_f.X, _f.Y));
+
+                var (xa, ya) = _a;
+                var (xb, yb) = _b;
+                var (xc, yc) = _c;
+                var (xd, yd) = _d;
+
+                var (xcurve, ycurve) = Bezier.CubicBezier(
+                    _x,
+                    xa, ya,
+                    xb, yb,
+                    xc, yc,
+                    xd, yd
+                );
+
+                _curve.Add(new Vector2(xcurve, ycurve));
 
                 x += change;
             }
@@ -174,11 +217,18 @@ namespace ConsoleApp12
 
             PrimitiveRenderer.DrawCircleF(
                 null,
-                Color.Red,
+                Color.Blue,
                 _b,
                 _radiusB
             );
 
+            PrimitiveRenderer.DrawCircleF(
+                null,
+                Color.Blue,
+                _c,
+                _radiusC
+            );
+            
             PrimitiveRenderer.DrawCircleF(
                 null,
                 Color.Red,
@@ -186,45 +236,25 @@ namespace ConsoleApp12
                 _radiusD
             );
 
-            /*PrimitiveRenderer.DrawLine(
-                null,
-                Color.Black,
-                _a, _b
-            );
-
-            PrimitiveRenderer.DrawLine(
-                null,
-                Color.Black,
-                _b, _d
-            );
-
             PrimitiveRenderer.DrawLine(
                 null,
                 Color.Blue,
-                _c, _e
+                _a, _b
             );
-
-            PrimitiveRenderer.DrawCircleF(
+            
+            PrimitiveRenderer.DrawLine(
                 null,
-                Color.Red,
-                _c,
-                2f
+                Color.Blue,
+                _c, _d
             );
+            
+            DrawBezier();
 
-            PrimitiveRenderer.DrawCircleF(
-                null,
-                Color.Red,
-                _e,
-                2f
-            );
+            base.Draw(gameTime);
+        }
 
-            PrimitiveRenderer.DrawCircleF(
-                null,
-                Color.Red,
-                _f,
-                2f
-            );*/
-
+        private void DrawBezier()
+        {
             for (int index = 1; index < _curve.Count; index += 1)
             {
                 var a = _curve[index - 1];
@@ -235,8 +265,6 @@ namespace ConsoleApp12
                     a, b
                 );
             }
-
-            base.Draw(gameTime);
         }
 
         protected override void Initialize()
@@ -246,11 +274,13 @@ namespace ConsoleApp12
             _curve = new List<Vector2>();
 
             _a = new Vector2(0, 0);
-            _b = new Vector2(100, 100);
+            _b = new Vector2(0, 100);
+            _c = new Vector2(-100, 0);
             _d = new Vector2(-100, 100);
 
             _radiusA = 5f;
             _radiusB = 5f;
+            _radiusC = 5f;
             _radiusD = 5f;
 
             base.Initialize();
