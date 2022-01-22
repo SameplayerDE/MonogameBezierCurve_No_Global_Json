@@ -29,8 +29,7 @@ namespace ConsoleApp12
             _graphics = new GraphicsDeviceManager(this);
             IsMouseVisible = true;
         }
-
-
+        
         protected override void Update(GameTime gameTime)
         {
             if (!IsActive) return;
