@@ -317,10 +317,35 @@ namespace ConsoleApp12
                 Color.Blue,
                 _f, _g
             );
+
+            PrimitiveRenderer.DrawCircleF(
+                null,
+                Color.Green,
+                GetBezierPosition((float)gameTime.TotalGameTime.TotalMilliseconds / 50),
+                4f
+            );
             
             DrawBezier();
 
             base.Draw(gameTime);
+        }
+
+        private Vector2 GetBezierPosition(float x)
+        {
+            x = (int)x;
+            if (x < _curveA.Count)
+            {
+                return _curveA[(int)x];
+            }
+            
+            x -= _curveA.Count - 1;
+            if (x < _curveB.Count)
+            {
+                return _curveB[(int)x];
+            }
+            
+            x -= _curveB.Count - 1;
+            return GetBezierPosition(x);
         }
 
         private void DrawBezier()
