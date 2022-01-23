@@ -11,6 +11,8 @@ namespace ConsoleApp12
     {
         private GraphicsDeviceManager _graphics;
 
+        private Vector3 _cameraPosition;
+        
         private Vector2 _a, _b, _c, _d, _e, _f, _g;
         private Vector2 _offsetA, _offsetD, _offsetG;
         private float _x;
@@ -43,10 +45,30 @@ namespace ConsoleApp12
             _currMouseState = Mouse.GetState();
 
             var mouseDelta = (_currMouseState.Position - _prevMouseState.Position).ToVector2();
-
+            mouseDelta *= PrimitiveRenderer.Scale;
+            
+            
             if (keyboardState.IsKeyDown(Keys.Escape))
             {
                 Exit();
+            }
+
+            if (_currMouseState.ScrollWheelValue > _prevMouseState.ScrollWheelValue)
+            {
+                PrimitiveRenderer.Scale -= 1f * deltaTime;
+            }
+            
+            if (_currMouseState.ScrollWheelValue < _prevMouseState.ScrollWheelValue)
+            {
+                PrimitiveRenderer.Scale += 1f * deltaTime;
+            }
+
+            if (_currMouseState.MiddleButton == ButtonState.Pressed)
+            {
+
+                _cameraPosition.X -= mouseDelta.X;
+                _cameraPosition.Y -= mouseDelta.Y;
+
             }
 
             UpdatePrimitiveRenderer();
@@ -54,6 +76,13 @@ namespace ConsoleApp12
             var (width, height) = GraphicsDevice.Viewport.Bounds.Size.ToVector2();
             var mousePosition = _currMouseState.Position.ToVector2();
             mousePosition -= new Vector2(width, height) / 2;
+            
+            mousePosition *= PrimitiveRenderer.Scale;
+            
+            mousePosition.X += _cameraPosition.X;
+            mousePosition.Y += _cameraPosition.Y;
+
+            
 
             var distanceA = Vector2.Distance(_a, mousePosition);
             var distanceB = Vector2.Distance(_b, mousePosition);
@@ -222,22 +251,8 @@ namespace ConsoleApp12
 
         private void UpdatePrimitiveRenderer()
         {
-            var (width, height) = GraphicsDevice.Viewport.Bounds.Size.ToVector2();
-            var viewPosition = new Vector3(width, height, 0) / 2;
-
-            PrimitiveRenderer.World =
-                Matrix.CreateWorld(new Vector3(GraphicsDevice.Viewport.Bounds.Center.ToVector2(), 0), Vector3.Forward,
-                    Vector3.Up);
-            PrimitiveRenderer.View = Matrix.CreateLookAt(
-                viewPosition + Vector3.Backward,
-                viewPosition + Vector3.Forward,
-                Vector3.Up
-            );
-            PrimitiveRenderer.Projection = Matrix.CreateOrthographic(
-                width / 1,
-                -height / 1,
-                0.1f, 10f
-            );
+            PrimitiveRenderer.ViewOffset = _cameraPosition;
+            PrimitiveRenderer.UpdateDefaultCamera();
         }
 
         protected override void Draw(GameTime gameTime)
