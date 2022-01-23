@@ -29,6 +29,10 @@ namespace ConsoleApp12
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
+
+            _graphics.IsFullScreen = true;
+            _graphics.HardwareModeSwitch = false;
+            
             IsMouseVisible = true;
         }
         
@@ -51,6 +55,16 @@ namespace ConsoleApp12
             if (keyboardState.IsKeyDown(Keys.Escape))
             {
                 Exit();
+            }
+            
+            if (keyboardState.IsKeyDown(Keys.R))
+            {
+                Reset();
+            }
+            
+            if (keyboardState.IsKeyDown(Keys.X))
+            {
+                ResetCamera();
             }
 
             if (_currMouseState.ScrollWheelValue > _prevMouseState.ScrollWheelValue)
@@ -199,6 +213,34 @@ namespace ConsoleApp12
             }
 
             base.Update(gameTime);
+        }
+
+        private void ResetCamera()
+        {
+            _cameraPosition = Vector3.Zero;
+            PrimitiveRenderer.Scale = 1f;
+        }
+        
+        private void Reset()
+        {
+            _a = new Vector2(-100, 100);
+            _d = new Vector2(0, 0);
+            _g = new Vector2(100, -100);
+            
+            _b = new Vector2(0, 100);
+            _c = new Vector2(-100, 0);
+            _e = new Vector2(100, 0);
+            _f = new Vector2(0, -100);
+
+            _radiusA = 5f;
+            _radiusB = 5f;
+            _radiusC = 5f;
+            _radiusD = 5f;
+            _radiusE = 5f;
+            _radiusF = 5f;
+            _radiusG = 5f;
+
+            GenerateCurve(25);
         }
 
         private void GenerateCurve(int segments)
